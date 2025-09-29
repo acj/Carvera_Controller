@@ -5,6 +5,7 @@ on:
       - develop
     tags:
       - "v*.*.*"
+  workflow_dispatch:
 
 jobs:
   build-windows-artifacts:
