@@ -42,7 +42,7 @@ cd $TOP_LEVEL || exit 1
 
 ln -sf $(pwd)/dist packaging_assets/ios/dist
 
-# Build the kivy-ios toolchain and needed dpendencies
+# Build the kivy-ios toolchain and needed dependencies
 python3 -m kivy_ios.toolchain build --add-custom-recipe packaging_assets/ios/recipes/quicklz --add-custom-recipe packaging_assets/ios/recipes/pyserial kivy quicklz pyserial
 
 python3 -m kivy_ios.toolchain update --add-custom-recipe packaging_assets/ios/recipes/quicklz --add-custom-recipe packaging_assets/ios/recipes/pyserial packaging_assets/ios/carveracontroller-ios

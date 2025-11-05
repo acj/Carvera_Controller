@@ -3,7 +3,7 @@
 //  carveracontroller
 //
 
-#import <Foundation/Foundation.h>
+// #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #include "Python.h"
 #include "SDL_main.h"
@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
     putenv("PYTHONPATH=.");
     putenv("PYTHONUNBUFFERED=1");
     putenv("LC_CTYPE=UTF-8");
-    // putenv("PYTHONVERBOSE=1");
-    // putenv("PYOBJUS_DEBUG=1");
+    putenv("PYTHONVERBOSE=1");
+    //putenv("PYOBJUS_DEBUG=1");
 
     // Kivy environment to prefer some implementation on iOS platform
     putenv("KIVY_BUILD=ios");
