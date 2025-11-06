@@ -1,5 +1,5 @@
 from pyobjus import autoclass, protocol
-from pyobjus.dylib_manager import load_framework, load_dylib, INCLUDE
+from carveracontroller.ios_framework_loader import load_framework, load_dylib, INCLUDE
 from pathlib import Path
 import ctypes
 

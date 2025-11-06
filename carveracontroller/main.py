@@ -1,6 +1,11 @@
 import os
+import sys
 import quicklz
 import struct
+
+# Patch pyobjus for iOS before any other imports that might use it
+if sys.platform == "ios":
+    from . import ios_init
 
 # import os
 # os.environ["KIVY_METRICS_DENSITY"] = '1'
@@ -148,7 +153,7 @@ from kivy.network.urlrequest import UrlRequest
 import webbrowser
 if sys.platform == "ios":
     from pyobjus import autoclass
-    from pyobjus.dylib_manager import load_framework
+    from carveracontroller.ios_framework_loader import load_framework
     try:
         load_framework('/System/Library/Frameworks/UIKit.framework')
 
