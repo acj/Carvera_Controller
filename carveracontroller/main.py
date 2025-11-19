@@ -105,6 +105,7 @@ from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.label import Label
+from kivy.uix.popup import Popup
 from kivy.properties import BooleanProperty
 from kivy.graphics import Color, Rectangle, Ellipse, Line, PushMatrix, PopMatrix, Translate, Rotate
 from kivy.properties import ObjectProperty, NumericProperty, ListProperty
@@ -637,6 +638,23 @@ class PairingPopup(ModalView):
             self.pairing = False
             self.pairing_note = self.pairing_string['timeout']
             self.countdown_event.cancel()
+
+class PickFilePopup(FloatLayout):
+    on_select = ObjectProperty(None)
+    on_cancel = ObjectProperty(None)
+
+    def __init__(self, on_select, on_cancel=None, **kwargs):
+        super(PickFilePopup, self).__init__(**kwargs)
+        self.on_select = on_select
+        self.on_cancel = on_cancel
+
+    def on_select_pressed(self, directory, filename):
+        if self.on_select:
+            self.on_select(directory, filename)
+
+    def on_cancel_pressed(self):
+        if self.on_cancel:
+            self.on_cancel()
 
 class UpgradePopup(ModalView):
     def __init__(self, **kwargs):
@@ -2160,6 +2178,7 @@ class Makera(RelativeLayout):
     downloading_size = 0
     downloading_file = ''
     downloading_config = False
+    backing_up_config = False
 
     setting_list = {}
     setting_type_list = {}
@@ -2280,6 +2299,7 @@ class Makera(RelativeLayout):
         self.xyz_probe_popup = XYZProbePopup()
         self.pairing_popup = PairingPopup()
         self.upgrade_popup = UpgradePopup()
+        self.pick_file_popup = None
         self.language_popup = LanguagePopup()
         self.language_popup.sp_language.values = translation.LANGS.values()
         self.language_popup.sp_language.text =  'English'
@@ -3400,6 +3420,35 @@ class Makera(RelativeLayout):
         threading.Thread(target=self.doDownload).start()
 
     # -----------------------------------------------------------------------
+    def open_back_up_config_txt(self):
+        app = App.get_running_app()
+        app.selected_local_filename = os.path.join(self.temp_dir, 'config.txt')
+        self.downloading_file = '/sd/config.txt'
+        self.downloading_size = 1024 * 5
+        self.backing_up_config = True
+        threading.Thread(target=self.doDownload).start()
+
+    def choose_back_up_config_destination(self, *args):
+        content = PickFilePopup(self.finish_backing_up_config)
+        self.pick_file_popup = Popup(title="Choose where to back up your machine configuration", content=content, size_hint=(0.75, 0.75), auto_dismiss=True)
+        content.on_cancel = self.pick_file_popup.dismiss
+        self.pick_file_popup.open()
+
+    def finish_backing_up_config(self, selected_dir, selected_file):
+        self.backing_up_config = False
+        self.pick_file_popup.dismiss()
+        self.pick_file_popup = None
+        source_file_path = App.get_running_app().selected_local_filename
+        dest_file_path = os.path.join(selected_dir, 'config_backup_' + time.strftime('%Y%m%d_%H%M%S') + '.txt')
+        try:
+            shutil.copyfile(source_file_path, dest_file_path)
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Configuration file backed up successfully"), False), 0)
+        except Exception as e:
+            Clock.schedule_once(partial(self.show_message_popup, tr._(f"Couldn't back up the machine configuration. The error was:\n\n{e}"), False), 0)
+            print("Error backing up config file:", e)
+            return
+        
+    # -----------------------------------------------------------------------
     def download_config_file(self):
         app = App.get_running_app()
         app.selected_local_filename = os.path.join(self.temp_dir, 'config.txt')
@@ -3493,7 +3542,9 @@ class Makera(RelativeLayout):
             else:
                 # MD5 same
                 os.remove(app.selected_local_filename + '.tmp')
-            if self.downloading_config:
+            if self.backing_up_config:
+                Clock.schedule_once(self.choose_back_up_config_destination)
+            elif self.downloading_config:
                 Clock.schedule_once(partial(self.progressUpdate, 100, '', True), 0)
                 Clock.schedule_once(partial(self.finishLoadConfig, True), 0.1)
 
