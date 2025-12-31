@@ -4783,6 +4783,7 @@ class Makera(RelativeLayout):
 
                         # restore/default are used for default config management
                         # carvera/graphics options are managed via Controller settings (not here)
+                        # backup is a one-shot operation and not a setting to be stored
                         elif child.section.lower() not in ['restore','default', 'backup', 'carvera', 'graphics', 'kivy']:
                             self.controller.log.put(
                                 (Controller.MSG_ERROR, tr._('Load config error, Key:') + ' {}'.format(child.key)))
