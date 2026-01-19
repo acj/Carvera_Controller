@@ -1,10 +1,10 @@
 name: Build and Release
 on:
   push:
-    branches:
-      - develop
-    tags:
-      - "v*.*.*"
+    # branches:
+    #   - develop
+    # tags:
+    #   - "v*.*.*"
 
 jobs:
   build-windows-artifacts:
@@ -116,7 +116,6 @@ jobs:
   build-ios-app:
     name: build-ios
     runs-on: macos-15
-    if: startsWith(github.ref, 'refs/heads/develop')
     defaults:
       run:
         shell: bash
