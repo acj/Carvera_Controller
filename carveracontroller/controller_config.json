@@ -265,5 +265,13 @@
         "section": "carvera",
         "key": "high_precision_reamining_time_estimate",
         "default": "true"
+    },
+    {
+        "type": "bool",
+        "title": "Show UI Stall Monitor",
+        "desc": "Display a button in the toolbar that turns red when the UI thread stalls. Useful for debugging performance issues.",
+        "section": "carvera",
+        "key": "show_ui_stall_monitor",
+        "default": "false"
     }
 ]

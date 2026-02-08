@@ -49,9 +49,10 @@
     text: ''
     size_hint_x: None
     notify: False
+    bg_color: 80/255, 80/255, 80/255, 1
     canvas.before:
         Color:
-            rgba: 80/255, 80/255, 80/255, 1
+            rgba: self.bg_color
         Rectangle:
             pos: self.pos
             size: self.size
@@ -3583,10 +3584,16 @@
                     root.laser_drop_down.open(self)
                     root.laser_drop_down.opened = True
 
-            
-
             Label:
                 text: ''
+
+            IconButton:
+                id: ui_stall_button
+                icon: 'data/feedhold1.png'
+                icon_size: 24
+                tooltip_txt: tr._('When red, the UI thread is stalling')
+                width: '50dp' if app.show_ui_stall_monitor else 0
+                opacity: 1 if app.show_ui_stall_monitor else 0
 
             IconButton:
                 icon: 'data/list.png'

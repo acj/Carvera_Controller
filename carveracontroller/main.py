@@ -1694,6 +1694,7 @@ class MachineButton(ToolTipButton):
 
 class IconButton(BoxLayout, ToolTipButton):
     icon = StringProperty("fresk.png")
+    bg_color = ListProperty([80/255, 80/255, 80/255, 1])
 
 class TransparentButton(BoxLayout, ToolTipButton):
     icon = StringProperty("fresk.png")
@@ -2629,6 +2630,11 @@ class Makera(RelativeLayout):
     # Custom property to monitor CNC light state
     light_state = LightProperty(False)
 
+    # UI stall monitoring
+    _last_frame_time = 0.0
+    _ui_stall_threshold = 0.0  # Set from Config in __init__
+    _ui_is_stalled = False
+
     played_lines = 0
     _remaining_anchor_sec = 0.0
     _remaining_anchor_time = 0.0
@@ -2849,12 +2855,20 @@ class Makera(RelativeLayout):
         if Config.has_option('carvera', 'active_color'):
             App.get_running_app().active_color = self._parse_active_color(Config.get('carvera', 'active_color'))
 
+        if Config.has_option('carvera', 'show_ui_stall_monitor'):
+            App.get_running_app().show_ui_stall_monitor = Config.get('carvera', 'show_ui_stall_monitor') == '1'
+
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
         Clock.schedule_interval(self.switch_status, 8)
         # model metadata check timer
         Clock.schedule_interval(self.check_model_metadata, 10)
+        # UI stall monitor (only if enabled)
+        maxfps = Config.getint('graphics', 'maxfps') if Config.has_option('graphics', 'maxfps') else 60
+        self._ui_stall_threshold = 1.0 / maxfps
+        if App.get_running_app().show_ui_stall_monitor:
+            Clock.schedule_interval(self.monitor_ui_stall, self._ui_stall_threshold)
 
         self.has_onscreen_keyboard = False
         if sys.platform == "ios":
@@ -3161,6 +3175,28 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def refresh_work_origin(self, *args):
         self.coord_popup.load_config()
+
+    # -----------------------------------------------------------------------
+    def monitor_ui_stall(self, dt):
+        current_time = time.time()
+
+        if self._last_frame_time == 0.0:
+            self._last_frame_time = current_time
+            return
+
+        frame_duration = current_time - self._last_frame_time
+        self._last_frame_time = current_time
+
+        is_stalled = frame_duration > (self._ui_stall_threshold * 2)
+
+        if is_stalled != self._ui_is_stalled:
+            self._ui_is_stalled = is_stalled
+            if 'ui_stall_button' in self.ids:
+                if is_stalled:
+                    self.ids.ui_stall_button.bg_color = [1, 0, 0, 1]
+                else:
+                    # Default gray background
+                    self.ids.ui_stall_button.bg_color = [80/255, 80/255, 80/255, 1]
 
     # -----------------------------------------------------------------------
     def blink_state(self, *args):
@@ -5677,6 +5713,19 @@ class Makera(RelativeLayout):
         if self.controller_setting_change_list.get('active_color'):
             App.get_running_app().active_color = self._parse_active_color(self.controller_setting_change_list.get('active_color'))
 
+        if 'show_ui_stall_monitor' in self.controller_setting_change_list:
+            enabled = self.controller_setting_change_list.get('show_ui_stall_monitor') == '1'
+            App.get_running_app().show_ui_stall_monitor = enabled
+            if enabled:
+                Clock.unschedule(self.monitor_ui_stall)
+                self._last_frame_time = 0.0  # Reset timing
+                Clock.schedule_interval(self.monitor_ui_stall, self._ui_stall_threshold)
+            else:
+                Clock.unschedule(self.monitor_ui_stall)
+                self._ui_is_stalled = False
+                if 'ui_stall_button' in self.ids:
+                    self.ids.ui_stall_button.bg_color = [80/255, 80/255, 80/255, 1]
+
         if "pendant_type" in self.controller_setting_change_list:
             self.pendant.close()
             self.setup_pendant()
@@ -6113,6 +6162,7 @@ class MakeraApp(App):
     mdi_data = ListProperty([])
     invert_y_axis_jogging = BooleanProperty(False)
     active_color = ListProperty([0, 1, 1, 1])  # Default cyan (0, 255, 255) in 0-1 range
+    show_ui_stall_monitor = BooleanProperty(False)
 
     def on_stop(self):
         # Cancel any ongoing reconnection attempts to prevent hanging
